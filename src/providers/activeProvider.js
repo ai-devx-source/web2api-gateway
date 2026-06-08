@@ -3,7 +3,7 @@ import path from 'path';
 import { SESSION_DIR, PUPPETEER_HEADLESS } from '../config.js';
 
 const PROFILE_FILE = path.resolve(process.cwd(), SESSION_DIR, 'provider-profile.json');
-const VALID_PROVIDERS = new Set(['auto', 'qwen', 'zai', 'deepseek', 'kimi', 'minimax', 'huggingface']);
+const VALID_PROVIDERS = new Set(['auto', 'qwen', 'zai', 'deepseek', 'kimi', 'minimax', 'perplexity', 'mimo', 'huggingface']);
 const VALID_AUTH_MODES = new Set(['account', 'guest']);
 const VALID_TRANSPORT_MODES = new Set(['api', 'dom']);
 const DEFAULT_PROVIDER = 'auto';
@@ -13,6 +13,8 @@ const DEFAULT_AUTH_MODES = {
     deepseek: 'account',
     kimi: 'account',
     minimax: 'account',
+    perplexity: 'account',
+    mimo: 'account',
     huggingface: 'account'
 };
 
@@ -22,6 +24,7 @@ function normalizeProvider(value) {
     if (provider === 'ds') return 'deepseek';
     if (provider === 'moonshot') return 'kimi';
     if (provider === 'mm') return 'minimax';
+    if (provider === 'pplx') return 'perplexity';
     if (provider === 'hf') return 'huggingface';
     return VALID_PROVIDERS.has(provider) ? provider : DEFAULT_PROVIDER;
 }

@@ -26,7 +26,7 @@
 | 🟢 **DeepSeek** | API + Browser | 2 | Чат, Рассуждения (R1) |
 | 🟢 **Kimi (Moonshot)** | Browser | 6 | Чат, Длинный контекст (128k) |
 | 🟢 **MiniMax (Hailuo)** | Browser | — | Чат, Стриминг |
-| 🟢 **Perplexity AI** | Browser | — | Поиск + Чат |
+| 🟢 **Perplexity AI** | Browser | 8 | Поиск + Чат |
 | 🟢 **Xiaomi MIMO** | Browser | — | Чат |
 | 🟢 **HuggingFace** | API | — | Открытые модели |
 
@@ -76,6 +76,16 @@ deepseek-chat       deepseek-reasoner
 ```
 kimi-k2.6           kimi-k2.5            kimi-k2
 moonshot-v1-128k    moonshot-v1-32k      moonshot-v1-8k
+```
+</details>
+
+<details>
+<summary><b>Perplexity AI (8 моделей)</b></summary>
+
+```
+Auto                Turbo                PPLX-Pro
+Gemini-2.5-Pro      Claude-Sonnet-4      Claude-Opus-4
+Nemotron            GPT-5
 ```
 </details>
 
