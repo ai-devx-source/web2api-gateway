@@ -125,18 +125,7 @@ For daily usage:
 
 Once started, the **Interactive CLI Dashboard** will appear:
 
-```text
-======================[ PROVIDERS ]======================
-1. Qwen         | Trans: API | Auth: Yes | Tokens: 1/1  | Test: OK         | Status: Connected
-2. DeepSeek     | Trans: API | Auth: Yes | Tokens: 1/1  | Test: OK         | Status: Connected
-3. Kimi         | Trans: API | Auth: Yes | Tokens: 1/1  | Test: OK         | Status: Connected
-...
-======================[ OPTIONS ]======================
- 9. Select Active Provider Profile (Default fallback for standard clients)
-10. List Models from Connected Providers
-...
-12. Start Common Endpoint (Default)
-```
+![Web2API Gateway Studio Menu](./docs/assets/menu.png)
 
 - Manage token and account statuses.
 - Select your default **Active Provider**.
