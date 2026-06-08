@@ -19,14 +19,65 @@
 
 The service supports 8 different providers via direct API integration, browser session hijacking (Cookies), or Cloudflare bypass (DOM-proxying).
 
-- 🟢 **Qwen (Tongyi Qianwen)** — Full support (chat, streaming, guest mode).
-- 🟢 **Z.ai / GLM** — Browser-backed API, Guest mode support.
-- 🟢 **DeepSeek** — Supported via session extraction, Cloudflare bypass with header spoofing.
-- 🟢 **Kimi (Moonshot AI)** — Supported via Browser DOM Proxy (authorization required).
-- 🟢 **MiniMax (Hailuo AI)** — Session extraction via official web application.
-- 🟢 **Perplexity AI** — Supported via `__Secure-next-auth.session-token` cloning.
-- 🟢 **Xiaomi MIMO** — Supported via Cookie sessions.
-- 🟢 **HuggingFace** — Access to free open-source models.
+| Provider | Transport | Models | Features |
+|---|---|---|---|
+| 🟢 **Qwen** | API | 28 models | Chat, Streaming, Vision, Image/Video Gen |
+| 🟢 **Z.ai / GLM** | API + Browser | 14 models | Chat, Streaming, Vision, Deep Research |
+| 🟢 **DeepSeek** | API + Browser | 2 models | Chat, Reasoning (R1) |
+| 🟢 **Kimi (Moonshot)** | Browser | 6 models | Chat, Long Context (128k) |
+| 🟢 **MiniMax (Hailuo)** | Browser | - | Chat, Streaming |
+| 🟢 **Perplexity AI** | Browser | - | Search-augmented Chat |
+| 🟢 **Xiaomi MIMO** | Browser | - | Chat |
+| 🟢 **HuggingFace** | API | - | Open-source models |
+
+### 📋 Available Models
+
+<details>
+<summary><b>Qwen (28 models)</b></summary>
+
+```
+qwen3.7-plus        qwen3.7-max          qwen3.6-plus
+qwen3.5-plus        qwen3.5-flash        qwen3.5-397b-a17b
+qwen3.5-122b-a10b   qwen3.5-27b          qwen3.5-35b-a3b
+qwen3-max           qwen3-vl-plus        qwen3-coder-plus
+qwen3-omni-flash    qwen3-235b-a22b      qwen3-30b-a3b
+qwen3-coder-30b-a3b-instruct             qwq-32b
+qwen-max-latest     qwen-plus-2025-09-11 qwen-plus-2025-01-25
+qwen-turbo-2025-02-11                    qwen2.5-omni-7b
+qvq-72b-preview-0310                     qwen2.5-vl-32b-instruct
+qwen2.5-14b-instruct-1m                  qwen2.5-coder-32b-instruct
+qwen2.5-72b-instruct
+```
+</details>
+
+<details>
+<summary><b>Z.ai / GLM (14 models)</b></summary>
+
+```
+GLM-5.1             GLM-5-Turbo          GLM-5v-Turbo
+glm-5               glm-4.7              glm-4.6v
+0727-106B-API       0727-360B-API        0808-360B-DR
+GLM-4.1V-Thinking-FlashX                deep-research
+zero                glm-4-flash          glm-4-air-250414
+```
+</details>
+
+<details>
+<summary><b>DeepSeek (2 models)</b></summary>
+
+```
+deepseek-chat       deepseek-reasoner
+```
+</details>
+
+<details>
+<summary><b>Kimi / Moonshot AI (6 models)</b></summary>
+
+```
+kimi-k2.6           kimi-k2.5            kimi-k2
+moonshot-v1-128k    moonshot-v1-32k      moonshot-v1-8k
+```
+</details>
 
 🎨 **Media Generation (Images & Video):** Supports image (`/v1/images/generations`) and video (`/v1/videos/generations`) generation powered by Qwen (Wanx) or DashScope.
 🤖 **Agents & Web UI:** Functions as a drop-in OpenAI API replacement. Seamlessly integrates with any agentic framework (LangChain, AutoGPT, Hermes-based agents) and web panels (Open WebUI, LobeChat, Cursor, VS Code).
