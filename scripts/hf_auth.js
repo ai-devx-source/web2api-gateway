@@ -9,10 +9,10 @@ async function main() {
         logInfo('HuggingFace authentication complete. Running automatic test...');
         await runProviderTest('hf');
         logInfo('You can now use HuggingFace via ApiConnector.');
-        process.exit(0);
+        setTimeout(() => process.exit(0), 100);
     } catch (error) {
         logError(`Authorization failed: ${error.message}`);
-        process.exit(1);
+        setTimeout(() => process.exit(1), 100);
     }
 }
 
