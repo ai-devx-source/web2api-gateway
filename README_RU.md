@@ -27,7 +27,7 @@
 | 🟢 **Kimi (Moonshot)** | Browser | 6 | Чат, Длинный контекст (128k) |
 | 🟢 **MiniMax (Hailuo)** | Browser | — | Чат, Стриминг |
 | 🟢 **Perplexity AI** | Browser | 8 | Поиск + Чат |
-| 🟢 **Xiaomi MIMO** | Browser | — | Чат |
+| 🟢 **Xiaomi MIMO** | API | 5 | Чат, Стриминг |
 | 🟢 **HuggingFace** | API | — | Открытые модели |
 
 ### 📋 Список доступных моделей
@@ -86,6 +86,15 @@ moonshot-v1-128k    moonshot-v1-32k      moonshot-v1-8k
 Auto                Turbo                PPLX-Pro
 Gemini-2.5-Pro      Claude-Sonnet-4      Claude-Opus-4
 Nemotron            GPT-5
+```
+</details>
+
+<details>
+<summary><b>Xiaomi MIMO (5 моделей)</b></summary>
+
+```
+mimo-v2.5-pro       mimo-v2.5            mimo-v2-pro
+mimo-v2-flash       mimo-v2-omni
 ```
 </details>
 

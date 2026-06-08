@@ -14,27 +14,13 @@ async function main() {
     console.log('=============================================');
     console.log('   Xiaomi MIMO Authorization Setup');
     console.log('=============================================');
-    console.log('1. Go to https://aistudio.xiaomimimo.com/ and log in.');
-    console.log('2. Open Developer Tools (F12) -> Application -> Cookies.');
-    console.log('3. Copy the following 3 cookies:');
+    console.log('1. Go to https://platform.xiaomimimo.com/');
+    console.log('2. Sign in and navigate to API Keys section.');
+    console.log('3. Create a new API key (format: sk-... or tp-...)');
     console.log('=============================================');
-    
-    const serviceToken = await prompt('Enter serviceToken: ');
-    if (!serviceToken.trim()) {
-        console.log('Authorization cancelled.');
-        rl.close();
-        return;
-    }
 
-    const userId = await prompt('Enter userId: ');
-    if (!userId.trim()) {
-        console.log('Authorization cancelled.');
-        rl.close();
-        return;
-    }
-
-    const phToken = await prompt('Enter xiaomichatbot_ph: ');
-    if (!phToken.trim()) {
+    const apiKey = await prompt('Enter MIMO API key: ');
+    if (!apiKey.trim()) {
         console.log('Authorization cancelled.');
         rl.close();
         return;
@@ -42,14 +28,13 @@ async function main() {
 
     const tokenObj = {
         id: `mimo-${Date.now()}`,
-        serviceToken: serviceToken.trim(),
-        userId: userId.trim(),
-        phToken: phToken.trim(),
+        token: apiKey.trim(),
         createdAt: new Date().toISOString()
     };
 
     mimoTokenManager.saveTokens([tokenObj]);
-    console.log('Xiaomi MIMO tokens saved successfully!');
+    console.log('✅ Xiaomi MIMO API key saved successfully!');
+    console.log('   You can now use MIMO models via the gateway.');
     rl.close();
 }
 

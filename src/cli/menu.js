@@ -393,8 +393,11 @@ export async function runInteractiveStartup(shutdownFn) {
         console.log(`\n  \x1b[36m[ Active Profile ]:\x1b[0m \x1b[32m${activeProvider.toUpperCase()}\x1b[0m   \x1b[90m|\x1b[0m   \x1b[36m[ Visible Browser ]:\x1b[0m \x1b[33m${headlessMode === false ? 'ON' : 'OFF'}\x1b[0m`);
         console.log('\n\x1b[36m  ═════════════════════════════════════════[ PROVIDERS ]══════════════════════════════════════════════════\x1b[0m');
         const formatRow = (name, available, isValid = 0, total = 0) => {
-            const id = name.split('/')[0].trim().toLowerCase().replace('.', '');
-            const actualId = id === 'huggingf' ? 'hf' : id === 'z' ? 'zai' : id;
+            const id = name.split('/')[0].trim().toLowerCase().replace('.', '').replace(' ', '-');
+            const actualId = id === 'huggingf' ? 'hf'
+                : id === 'z' ? 'zai'
+                : id === 'xiaomi-mimo' ? 'mimo'
+                : id.replace('-', '');
             
             const mode = providerProfile.providerAuthModes[actualId] || 'account';
             const transport = providerProfile.providerTransportModes[actualId] || 'api';

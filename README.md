@@ -27,7 +27,7 @@ The service supports 8 different providers via direct API integration, browser s
 | 🟢 **Kimi (Moonshot)** | Browser | 6 models | Chat, Long Context (128k) |
 | 🟢 **MiniMax (Hailuo)** | Browser | — | Chat, Streaming |
 | 🟢 **Perplexity AI** | Browser | 8 models | Search-augmented Chat |
-| 🟢 **Xiaomi MIMO** | Browser | — | Chat |
+| 🟢 **Xiaomi MIMO** | API | 5 models | Chat, Streaming |
 | 🟢 **HuggingFace** | API | — | Open-source models |
 
 ### 📋 Available Models
@@ -86,6 +86,15 @@ moonshot-v1-128k    moonshot-v1-32k      moonshot-v1-8k
 Auto                Turbo                PPLX-Pro
 Gemini-2.5-Pro      Claude-Sonnet-4      Claude-Opus-4
 Nemotron            GPT-5
+```
+</details>
+
+<details>
+<summary><b>Xiaomi MIMO (5 models)</b></summary>
+
+```
+mimo-v2.5-pro       mimo-v2.5            mimo-v2-pro
+mimo-v2-flash       mimo-v2-omni
 ```
 </details>
 
