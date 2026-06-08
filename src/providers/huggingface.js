@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { SESSION_DIR } from '../config.js';
@@ -152,24 +153,11 @@ export async function sendHuggingFaceChatCompletion({ messages, model = DEFAULT_
     const prompt = messages.map(m => m.content).join('\n\n');
     const payload = {
         inputs: prompt,
-        parameters: {
-            temperature: 0.6,
-            top_p: 0.95,
-            repetition_penalty: 1.2,
-            top_k: 50,
-            truncate: 1024,
-            watermark: false,
-            max_new_tokens: 4000,
-            stop: ["<|im_end|>", "</s>"],
-            return_full_text: false,
-            stream: true
-        },
-        stream: true,
-        options: {
-            use_cache: false,
-            is_retry: false,
-            id: require('crypto').randomUUID()
-        }
+        id: crypto.randomUUID(),
+        is_retry: false,
+        is_continue: false,
+        web_search: false,
+        tools: []
     };
 
     // 3. Send message
