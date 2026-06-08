@@ -6,7 +6,7 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { SESSION_DIR } from '../config.js';
 import { logInfo, logWarn } from '../logger/index.js';
 import { resolveBrowserExecutable } from '../utils/browserExecutable.js';
-import { getActiveProvider, getProviderAuthMode } from './activeProvider.js';
+import { getActiveProvider, getProviderAuthMode, getHeadlessMode } from './activeProvider.js';
 
 puppeteer.use(StealthPlugin());
 
@@ -15,17 +15,21 @@ const HF_PROVIDER_ID = 'huggingface';
 const HF_SESSION_DIR = path.resolve(process.cwd(), SESSION_DIR, 'huggingface');
 const HF_SESSION_FILE = path.join(HF_SESSION_DIR, 'session.json');
 const HF_PROFILE_DIR = path.join(HF_SESSION_DIR, 'browser-profile');
-const DEFAULT_HF_MODEL = 'Qwen/Qwen2.5-72B-Instruct';
+const DEFAULT_HF_MODEL = 'deepseek-ai/DeepSeek-V4-Pro';
 
 let hfBrowser = null;
 let hfPage = null;
 
 const HF_MODELS = [
-    { id: 'Qwen/Qwen2.5-72B-Instruct', name: 'Qwen 2.5 72B', object: 'model', provider: HF_PROVIDER_ID },
-    { id: 'meta-llama/Meta-Llama-3.1-70B-Instruct', name: 'Llama 3.1 70B', object: 'model', provider: HF_PROVIDER_ID },
-    { id: 'CohereForAI/c4ai-command-r-plus-08-2024', name: 'Command R+', object: 'model', provider: HF_PROVIDER_ID },
-    { id: 'mistralai/Mixtral-8x7B-Instruct-v0.1', name: 'Mixtral 8x7B', object: 'model', provider: HF_PROVIDER_ID },
-    { id: 'NousResearch/Hermes-3-Llama-3.1-8B', name: 'Hermes 3', object: 'model', provider: HF_PROVIDER_ID }
+    { id: 'deepseek-ai/DeepSeek-V4-Pro', name: 'DeepSeek V4 Pro', object: 'model', provider: HF_PROVIDER_ID },
+    { id: 'Qwen/Qwen3.6-35B-A3B', name: 'Qwen 3.6 35B', object: 'model', provider: HF_PROVIDER_ID },
+    { id: 'meta-llama/Llama-4-Scout-17B-16E-Instruct', name: 'Llama 4 Scout 17B', object: 'model', provider: HF_PROVIDER_ID },
+    { id: 'google/gemma-4-31B-it', name: 'Gemma 4 31B', object: 'model', provider: HF_PROVIDER_ID },
+    { id: 'CohereLabs/c4ai-command-a-03-2025', name: 'Command A (2025)', object: 'model', provider: HF_PROVIDER_ID },
+    { id: 'zai-org/GLM-5.1', name: 'GLM 5.1', object: 'model', provider: HF_PROVIDER_ID },
+    { id: 'moonshotai/Kimi-K2.6', name: 'Kimi K2.6', object: 'model', provider: HF_PROVIDER_ID },
+    { id: 'MiniMaxAI/MiniMax-M2.7', name: 'MiniMax M2.7', object: 'model', provider: HF_PROVIDER_ID },
+    { id: 'Qwen/Qwen2.5-72B-Instruct', name: 'Qwen 2.5 72B', object: 'model', provider: HF_PROVIDER_ID }
 ];
 
 function ensureSessionDir() {
@@ -74,8 +78,43 @@ export function getHuggingFaceSessionStatus() {
     };
 }
 
+async function initHuggingFaceBrowser() {
+    if (hfBrowser && hfPage) return;
+    ensureSessionDir();
+    const executablePath = resolveBrowserExecutable();
+    hfBrowser = await puppeteer.launch({
+        headless: getHeadlessMode() ?? true,
+        executablePath: executablePath || undefined,
+        userDataDir: HF_PROFILE_DIR,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1280,800']
+    });
+    const pages = await hfBrowser.pages();
+    hfPage = pages[0] || await hfBrowser.newPage();
+    
+    if (!global.hfChunkCallbacks) {
+        global.hfChunkCallbacks = {};
+        await hfPage.exposeFunction('onHfChunk', (reqId, chunk) => {
+            if (global.hfChunkCallbacks[reqId]) {
+                global.hfChunkCallbacks[reqId](chunk);
+            }
+        });
+        await hfPage.exposeFunction('onHfError', (reqId, err) => {
+            if (global.hfChunkCallbacks[reqId]) {
+                global.hfChunkCallbacks[reqId](err, true);
+            }
+        });
+    }
+
+    await hfPage.goto(HF_BASE_URL, { waitUntil: 'domcontentloaded' });
+}
+
 export async function authorizeHuggingFaceInteractive() {
     ensureSessionDir();
+    if (hfBrowser) {
+        await hfBrowser.close().catch(() => {});
+        hfBrowser = null;
+        hfPage = null;
+    }
     const executablePath = resolveBrowserExecutable();
     hfBrowser = await puppeteer.launch({
         headless: false,
@@ -128,28 +167,20 @@ export async function sendHuggingFaceChatCompletion({ messages, model = DEFAULT_
         throw new Error('Missing HuggingFace session. Run `npm run hf:auth` first.');
     }
 
-    const headers = {
-        'Cookie': session.cookieHeader,
-        'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
-    };
+    await initHuggingFaceBrowser();
 
-    // 1. Create conversation
-    logInfo(`[HuggingFace] Creating conversation for model: ${model}`);
-    const createRes = await fetch(`${HF_BASE_URL}/conversation`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ model })
+    // Inject cookies into the browser context to ensure authentication
+    const cookiesArray = session.cookieHeader.split(';').map(c => {
+        const [name, ...rest] = c.trim().split('=');
+        return { name, value: rest.join('='), domain: '.huggingface.co', path: '/' };
     });
-
-    if (!createRes.ok) {
-        throw new Error(`Failed to create conversation: HTTP ${createRes.status} ${await createRes.text()}`);
-    }
+    await hfPage.setCookie(...cookiesArray);
     
-    const { conversationId } = await createRes.json();
-    if (!conversationId) throw new Error('Did not receive conversationId from HuggingFace');
+    // Ensure we are on the chat page to execute authenticated fetch requests
+    if (!hfPage.url().includes('/chat')) {
+        await hfPage.goto('https://huggingface.co/chat/', { waitUntil: 'domcontentloaded' });
+    }
 
-    // 2. Format inputs
     const prompt = messages.map(m => m.content).join('\n\n');
     const payload = {
         inputs: prompt,
@@ -157,68 +188,116 @@ export async function sendHuggingFaceChatCompletion({ messages, model = DEFAULT_
         is_retry: false,
         is_continue: false,
         web_search: false,
-        tools: []
+        tools: [],
+        files: []
     };
 
-    // 3. Send message
-    logInfo(`[HuggingFace] Sending message to conversation ${conversationId}`);
-    const msgRes = await fetch(`${HF_BASE_URL}/conversation/${conversationId}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload)
-    });
-
-    if (!msgRes.ok) {
-        throw new Error(`Failed to send message: HTTP ${msgRes.status} ${await msgRes.text()}`);
-    }
-
-    const reader = msgRes.body.getReader();
-    const decoder = new TextDecoder('utf-8');
-    let buffer = '';
+    const reqId = crypto.randomUUID();
     let content = '';
     let error = null;
 
-    let finished = false;
-    for (;;) {
-        if (finished) break;
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const events = buffer.split('\n\n');
-        buffer = events.pop() || '';
-        
-        for (const rawEvent of events) {
-            const line = rawEvent.split('\n').find(item => item.startsWith('data:'));
-            if (!line) continue;
-            const data = line.slice(5).trim();
-            if (!data) continue;
-            
-            try {
-                const event = JSON.parse(data);
-                if (event.type === 'stream') {
-                    const delta = event.token || '';
-                    content += delta;
-                    if (delta && onChunk) onChunk(delta);
-                } else if (event.type === 'finalAnswer') {
-                    finished = true;
-                    break;
-                } else if (event.type === 'error') {
-                    error = event.message || 'Unknown error';
-                }
-            } catch {
-                // Ignore
-            }
+    global.hfChunkCallbacks[reqId] = (data, isError = false) => {
+        if (isError) {
+            error = data;
+        } else {
+            content += data;
+            if (data && onChunk) onChunk(data);
         }
+    };
+
+    logInfo(`[HuggingFace] Processing via pure DOM interaction...`);
+
+    try {
+        // Wait for page load and dismiss any welcome modals (e.g. "Start chatting" Omni modal)
+        await hfPage.evaluate(() => {
+            const btns = Array.from(document.querySelectorAll('button'));
+            const startBtn = btns.find(b => b.innerText && b.innerText.includes('Start chatting'));
+            if (startBtn) startBtn.click();
+        });
+
+        await hfPage.waitForSelector('textarea', { timeout: 15000 });
+        
+        // Wait for generation to be idle before typing (if continuing a chat)
+        await hfPage.waitForFunction(() => {
+            const btn = document.querySelector('button[type="submit"], button[name="submit"]');
+            return btn !== null;
+        }, { timeout: 10000 });
+
+        // Clear textarea if needed
+        await hfPage.evaluate(() => {
+            const ta = document.querySelector('textarea');
+            if (ta) { ta.value = ''; ta.dispatchEvent(new Event('input', { bubbles: true })); }
+        });
+
+        // Type the prompt like a human
+        await hfPage.type('textarea', prompt, { delay: 5 });
+
+        // Wait for submit to be enabled
+        await hfPage.waitForFunction(() => {
+            const btn = document.querySelector('button[type="submit"], button[name="submit"]');
+            return btn && !btn.disabled;
+        }, { timeout: 10000 });
+
+        // Click submit
+        await hfPage.click('button[type="submit"], button[name="submit"]');
+
+        // Evaluate scraping loop
+        await hfPage.evaluate(async (reqId) => {
+            try {
+                let isDone = false;
+                let lastContent = '';
+                let idleLoops = 0;
+                
+                while (!isDone) {
+                    await new Promise(r => setTimeout(r, 300));
+                    
+                    const blocks = document.querySelectorAll('.prose');
+                    if (blocks && blocks.length > 0) {
+                        const lastBlock = blocks[blocks.length - 1];
+                        const currentContent = lastBlock.innerText;
+                        
+                        if (currentContent && currentContent !== lastContent) {
+                            const delta = currentContent.slice(lastContent.length);
+                            lastContent = currentContent;
+                            await window.onHfChunk(reqId, delta);
+                            idleLoops = 0;
+                        } else {
+                            idleLoops++;
+                        }
+                    }
+                    
+                    // Generation is done if:
+                    // 1. We have received some text AND it hasn't changed for 3 seconds (10 loops).
+                    // 2. OR we see the "Stop generating" button disappear (tricky to track without exact selector).
+                    // The safest fallback is idle loops.
+                    if (lastContent.length > 0 && idleLoops > 10) {
+                        await new Promise(r => setTimeout(r, 500));
+                        // Final capture
+                        const finalBlocks = document.querySelectorAll('.prose');
+                        if (finalBlocks && finalBlocks.length > 0) {
+                            const finalBlock = finalBlocks[finalBlocks.length - 1];
+                            const finalContent = finalBlock.innerText;
+                            if (finalContent !== lastContent) {
+                                const delta = finalContent.slice(lastContent.length);
+                                await window.onHfChunk(reqId, delta);
+                            }
+                        }
+                        isDone = true;
+                    }
+                }
+            } catch (e) {
+                await window.onHfError(reqId, e.message);
+            }
+        }, reqId);
+
+    } catch (e) {
+        error = `DOM Error: ${e.message}`;
     }
 
-    // 4. Delete conversation (cleanup)
-    fetch(`${HF_BASE_URL}/conversation/${conversationId}`, {
-        method: 'DELETE',
-        headers
-    }).catch(() => {});
+    delete global.hfChunkCallbacks[reqId];
 
     if (error && !content) {
-        return { error, model, chatId: conversationId };
+        return { error, model, chatId: reqId };
     }
 
     return {
