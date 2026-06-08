@@ -233,41 +233,57 @@ export async function sendPerplexityChatCompletion({ messages, model = DEFAULT_P
     let buffer = '';
     let fullContent = '';
 
-    const parseLine = (line) => {
-        if (!line.startsWith('data:')) return;
-        const payload = line.slice(5).trim();
+    const parseDataLine = (payload) => {
         if (!payload || payload === '[DONE]') return;
         try {
             const data = JSON.parse(payload);
-            let deltaContent = '';
-            
-            // Perplexity SSE returns standard OpenAI-like choices sometimes, or its own format.
-            // Actually Chat2API says Perplexity returns a whole "text" or "answer" field for the current generation state, 
-            // but we need deltas. Wait, let's see how Chat2API handles streaming.
-            
-            // Wait, we'll implement a robust delta extractor:
-            if (data.choices && data.choices[0]?.delta?.content) {
-                deltaContent = data.choices[0].delta.content;
-            } else if (data.text) {
-                // Sometimes Perplexity returns the full text accumulated
-                const newContent = data.text;
-                if (newContent.length > fullContent.length) {
-                    deltaContent = newContent.substring(fullContent.length);
+
+            // Final SSE message contains `text` field which is a JSON string
+            // representing an array of step objects
+            if (data.text) {
+                let steps;
+                try {
+                    steps = JSON.parse(data.text);
+                } catch {
+                    // text is plain string, not JSON steps array
+                    if (data.text.length > fullContent.length) {
+                        const delta = data.text.substring(fullContent.length);
+                        fullContent = data.text;
+                        if (delta && typeof onChunk === 'function') onChunk(delta);
+                    }
+                    return;
                 }
-            } else if (data.answer) {
-                const newContent = data.answer;
-                if (newContent.length > fullContent.length) {
-                    deltaContent = newContent.substring(fullContent.length);
+
+                if (Array.isArray(steps)) {
+                    for (const step of steps) {
+                        if (step?.step_type === 'FINAL') {
+                            // content.answer is itself another JSON string
+                            let answerText = '';
+                            try {
+                                const answerObj = typeof step.content?.answer === 'string'
+                                    ? JSON.parse(step.content.answer)
+                                    : step.content?.answer;
+                                answerText = answerObj?.answer || answerObj?.text || '';
+                            } catch {
+                                answerText = step.content?.answer || '';
+                            }
+                            if (answerText && answerText.length > fullContent.length) {
+                                const delta = answerText.substring(fullContent.length);
+                                fullContent = answerText;
+                                if (delta && typeof onChunk === 'function') onChunk(delta);
+                            }
+                        }
+                    }
                 }
             }
 
-            if (deltaContent) {
-                fullContent += deltaContent;
-                if (typeof onChunk === 'function') onChunk(deltaContent);
+            // Fallback: standard OpenAI-like delta
+            if (!data.text && data.choices?.[0]?.delta?.content) {
+                const delta = data.choices[0].delta.content;
+                fullContent += delta;
+                if (typeof onChunk === 'function') onChunk(delta);
             }
-        } catch {
-            // ignore
-        }
+        } catch { /* ignore */ }
     };
 
     while (true) {
@@ -276,13 +292,18 @@ export async function sendPerplexityChatCompletion({ messages, model = DEFAULT_P
         buffer += decoder.decode(value, { stream: true });
         let newlineIdx;
         while ((newlineIdx = buffer.indexOf('\n')) !== -1) {
-            const line = buffer.slice(0, newlineIdx).trim();
+            const line = buffer.slice(0, newlineIdx).replace(/\r$/, '').trim();
             buffer = buffer.slice(newlineIdx + 1);
-            parseLine(line);
+            if (!line || line.startsWith('event:')) continue;
+            if (line.startsWith('data:')) {
+                parseDataLine(line.slice(5).trim());
+            }
         }
     }
-    
-    if (buffer.trim()) parseLine(buffer.trim());
+
+    if (buffer.trim() && buffer.trim().startsWith('data:')) {
+        parseDataLine(buffer.trim().slice(5).trim());
+    }
 
     return {
         id: `chatcmpl-perplexity-${Date.now()}`,
