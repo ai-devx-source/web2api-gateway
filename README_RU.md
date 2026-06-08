@@ -136,7 +136,7 @@ cd web2api-gateway
 
 После запуска откроется **Интерактивный терминал (CLI Dashboard)**:
 
-![Web2API Gateway Studio Menu](./docs/assets/menu.png?v=2)
+![Web2API Gateway Studio Menu](./docs/assets/menu.png?v=3)
 
 - Управляйте статусами токенов и аккаунтов.
 - Выбирайте **Активного Провайдера** по умолчанию.

@@ -135,7 +135,7 @@ For daily usage:
 
 Once started, the **Interactive CLI Dashboard** will appear:
 
-![Web2API Gateway Studio Menu](./docs/assets/menu.png?v=2)
+![Web2API Gateway Studio Menu](./docs/assets/menu.png?v=3)
 
 - Manage token and account statuses.
 - Select your default **Active Provider**.
