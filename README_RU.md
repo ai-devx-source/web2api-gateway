@@ -28,7 +28,7 @@
 | 🟢 **MiniMax (Hailuo)** | Browser | — | Чат, Стриминг |
 | 🟢 **Perplexity AI** | Browser | 8 | Поиск + Чат |
 | 🟢 **Xiaomi MIMO** | API | 5 | Чат, Стриминг |
-| 🟢 **HuggingFace** | API | — | Открытые модели |
+| 🟢 **HuggingFace** | Browser | 9 | Открытые модели |
 
 ### 📋 Список доступных моделей
 
@@ -95,6 +95,16 @@ Nemotron            GPT-5
 ```
 mimo-v2.5-pro       mimo-v2.5            mimo-v2-pro
 mimo-v2-flash       mimo-v2-omni
+```
+</details>
+
+<details>
+<summary><b>HuggingFace (9 моделей)</b></summary>
+
+```
+DeepSeek-V4-Pro     Qwen3.6-35B-A3B      Llama-4-Scout-17B
+Gemma-4-31B-it      Command-A-2025       GLM-5.1
+Kimi-K2.6           MiniMax-M2.7         Qwen2.5-72B-Instruct
 ```
 </details>
 

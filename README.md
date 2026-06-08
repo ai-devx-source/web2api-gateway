@@ -28,7 +28,7 @@ The service supports 8 different providers via direct API integration, browser s
 | 🟢 **MiniMax (Hailuo)** | Browser | — | Chat, Streaming |
 | 🟢 **Perplexity AI** | Browser | 8 models | Search-augmented Chat |
 | 🟢 **Xiaomi MIMO** | API | 5 models | Chat, Streaming |
-| 🟢 **HuggingFace** | API | — | Open-source models |
+| 🟢 **HuggingFace** | Browser | 9 models | Open-source models |
 
 ### 📋 Available Models
 
@@ -95,6 +95,16 @@ Nemotron            GPT-5
 ```
 mimo-v2.5-pro       mimo-v2.5            mimo-v2-pro
 mimo-v2-flash       mimo-v2-omni
+```
+</details>
+
+<details>
+<summary><b>HuggingFace (9 models)</b></summary>
+
+```
+DeepSeek-V4-Pro     Qwen3.6-35B-A3B      Llama-4-Scout-17B
+Gemma-4-31B-it      Command-A-2025       GLM-5.1
+Kimi-K2.6           MiniMax-M2.7         Qwen2.5-72B-Instruct
 ```
 </details>
 
