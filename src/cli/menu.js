@@ -447,7 +447,7 @@ export async function runInteractiveStartup(shutdownFn) {
         const tsMinimax = getTokenState('minimax');
         const tsPerplexity = getTokenState('perplexity');
         const tsMimo = getTokenState('mimo');
-        const tsHf = getTokenState('hf');
+        const tsHf = getTokenState('huggingface');
 
         console.log(`  1. ${formatRow('Qwen', false, qwen.valid.length, qwen.total)}`);
         console.log(`  2. ${formatRow('Z.ai/GLM', zai.available, tsZai.valid.length, tsZai.total)}`);
