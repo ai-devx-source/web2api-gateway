@@ -394,7 +394,7 @@ export async function runInteractiveStartup(shutdownFn) {
         console.log('\n\x1b[36m  ═════════════════════════════════════════[ PROVIDERS ]══════════════════════════════════════════════════\x1b[0m');
         const formatRow = (name, available, isValid = 0, total = 0) => {
             const id = name.split('/')[0].trim().toLowerCase().replace('.', '').replace(' ', '-');
-            const actualId = id === 'huggingf' ? 'hf'
+            const actualId = id === 'huggingf' ? 'huggingface'
                 : id === 'z' ? 'zai'
                 : id === 'xiaomi-mimo' ? 'mimo'
                 : id.replace('-', '');
