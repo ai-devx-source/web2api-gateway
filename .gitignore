@@ -1,0 +1,53 @@
+# Node.js dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Session & cache data
+session/
+sessions/
+.sessions/
+.cache/
+.profile.json
+
+# Environment & secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Private/internal files
+codex_memory_export_*.json
+*_debug.json
+AGENTS.md
+test_accounts.md
+WiKI/
+tools/
+todo/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+venv/
+.env/
+.venv/
+
+# Editor files
+.idea/
+.vscode/
+.DS_Store
+*.swp
+*.swo
+
+# Internal
+src/Authorization.txt
