@@ -25,7 +25,7 @@
 | 🟢 **Z.ai / GLM** | API + Browser | 14 | Чат, Стриминг, Vision, Deep Research |
 | 🟢 **DeepSeek** | API + Browser | 2 | Чат, Рассуждения (R1) |
 | 🟢 **Kimi (Moonshot)** | Browser | 6 | Чат, Длинный контекст (128k) |
-| 🟢 **MiniMax (Hailuo)** | Browser | — | Чат, Стриминг |
+| 🟢 **MiniMax (Hailuo)** | Browser | 3 | Чат, Стриминг |
 | 🟢 **Perplexity AI** | Browser | 8 | Поиск + Чат |
 | 🟢 **Xiaomi MIMO** | API | 5 | Чат, Стриминг |
 | 🟢 **HuggingFace** | Browser | 9 | Открытые модели |
@@ -99,12 +99,10 @@ mimo-v2-flash       mimo-v2-omni
 </details>
 
 <details>
-<summary><b>HuggingFace (9 моделей)</b></summary>
+<summary><b>MiniMax / Hailuo (3 модели)</b></summary>
 
 ```
-DeepSeek-V4-Pro     Qwen3.6-35B-A3B      Llama-4-Scout-17B
-Gemma-4-31B-it      Command-A-2025       GLM-5.1
-Kimi-K2.6           MiniMax-M2.7         Qwen2.5-72B-Instruct
+MiniMax-M3          MiniMax-M2.7         MiniMax-Text-01
 ```
 </details>
 
@@ -179,10 +177,10 @@ curl http://localhost:3000/v1/chat/completions \
 
 Вся документация по настройке и использованию перенесена в папку `docs/`:
 
-1. [Быстрый Старт (Quickstart)](./docs/01_QUICKSTART.md)
-2. [Настройка Провайдеров (Авторизация)](./docs/02_PROVIDERS_GUIDE.md)
-3. [Интеграция с Клиентами (Open WebUI, LobeChat)](./docs/03_CLIENT_INTEGRATION.md)
-4. [Генерация Изображений](./docs/04_IMAGE_GENERATION.md)
+1. [Быстрый Старт (Quickstart)](./docs/ru/01_QUICKSTART.md)
+2. [Настройка Провайдеров (Авторизация)](./docs/ru/02_PROVIDERS_GUIDE.md)
+3. [Интеграция с Клиентами (Open WebUI, LobeChat)](./docs/ru/03_CLIENT_INTEGRATION.md)
+4. [Генерация Изображений](./docs/ru/04_IMAGE_GENERATION.md)
 5. [Решение проблем](./docs/ru/05_TROUBLESHOOTING.md)
 
 ## Отказ от ответственности (Disclaimer)

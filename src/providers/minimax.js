@@ -21,6 +21,7 @@ const MINIMAX_USER_AGENT = process.env.MINIMAX_USER_AGENT || 'Mozilla/5.0 (Macin
 export const minimaxTokenManager = new TokenManager('minimax');
 
 const MINIMAX_MODELS = [
+    { id: 'MiniMax-M3', name: 'MiniMax M3', object: 'model', created: 0, owned_by: 'minimax', provider: 'minimax', account_required: true, guest_available: false, permission: [] },
     { id: 'MiniMax-M2.7', name: 'MiniMax M2.7', object: 'model', created: 0, owned_by: 'minimax', provider: 'minimax', account_required: true, guest_available: false, permission: [] },
     { id: 'MiniMax-Text-01', name: 'MiniMax Text 01', object: 'model', created: 0, owned_by: 'minimax', provider: 'minimax', account_required: true, guest_available: false, permission: [] }
 ];
@@ -130,7 +131,7 @@ async function requestDeviceInfo(jwtToken, realUserID) {
     const dataJson = JSON.stringify({ uuid: randomUuid });
     const fullUri = `/v1/api/user/device/register?${queryStr}`;
     const yy = md5(`${encodeURIComponent(fullUri)}_${dataJson}${md5(unix)}ooui`);
-    const signature = md5(`${timestamp}I*7Cf%WZ#S&%1RlZJ&C2${dataJson}`);
+    const signature = md5(`${timestamp}${jwtToken}${dataJson}`);
 
     logInfo(`[MiniMax] Registering device - randomUuid: ${randomUuid}, realUserID: ${realUserID}`);
 
@@ -195,7 +196,7 @@ async function minimaxRequest(method, uri, bodyData, deviceInfo) {
     const dataJson = JSON.stringify(bodyData || {});
     const fullUri = `${uri}${uri.lastIndexOf('?') !== -1 ? '&' : '?'}${queryStr}`;
     const yy = md5(`${encodeURIComponent(fullUri)}_${dataJson}${md5(unix)}ooui`);
-    const signature = md5(`${timestamp}I*7Cf%WZ#S&%1RlZJ&C2${dataJson}`);
+    const signature = md5(`${timestamp}${deviceInfo.jwtToken}${dataJson}`);
 
     const headers = {
         ...FAKE_HEADERS,
@@ -306,7 +307,7 @@ export async function authorizeMinimaxInteractive() {
     console.log('------------------------------------------------------');
     console.log(' MiniMax Chat authorization');
     console.log('------------------------------------------------------');
-    console.log('1. Sign in to https://agent.minimax.io in the opened browser.');
+    console.log('1. Sign in to https://agent.minimaxi.com in the opened browser.');
     console.log('2. Send one short test prompt in the web chat and wait for a response.');
     console.log('   Watch this console to see hooked salt values!');
     console.log('3. Return here and press ENTER.');
@@ -462,64 +463,121 @@ async function sendMinimaxChatCompletionDomProxy({ messages, model = DEFAULT_MIN
     try {
         const page = await browser.newPage();
         await page.setUserAgent(MINIMAX_USER_AGENT);
-        await page.goto(`${MINIMAX_BASE_URL}/`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+
+        // --- Auth injection ---
+        // Navigate to a blank page on the target domain first to set localStorage
+        const domainBase = MINIMAX_BASE_URL.includes('agent.minimax.io')
+            ? 'https://agent.minimax.io'
+            : MINIMAX_BASE_URL;
+        
+        const tokenObj = await minimaxTokenManager.getAvailableToken();
+        if (tokenObj && tokenObj.token) {
+            logInfo('[MiniMax] Injecting JWT token into localStorage for DOM proxy...');
+            await page.goto(`${domainBase}/404`, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
+            await page.evaluate((token, uid) => {
+                localStorage.setItem('_token', token);
+                if (uid) localStorage.setItem('user_detail_agent', JSON.stringify({ realUserID: uid }));
+            }, tokenObj.token, tokenObj.realUserID || tokenObj.userId || null);
+        }
+
+        // --- Navigate to chat ---
+        let targetUrl;
+        if (MINIMAX_BASE_URL.includes('agent.minimax.io')) {
+            targetUrl = `${domainBase}/mavis?id=407176432079153`;
+        } else {
+            targetUrl = `${MINIMAX_BASE_URL}/`;
+        }
+        await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
+        
+        // Give the SPA time to render
+        await new Promise(r => setTimeout(r, 5000));
         
         const textPrompt = messagesToTextProxy(messages);
         
         // Wait for textarea
-        await page.waitForSelector('textarea', { timeout: 30000 });
-        const textarea = await page.$('textarea');
-        if (!textarea) throw new Error('Could not find input textarea');
+        await page.waitForSelector('[data-testid="message-textarea"]', { timeout: 30000 });
         
-        // Type prompt
-        await page.evaluate((el, val) => { el.value = val; }, textarea, textPrompt);
-        await page.type('textarea', ' '); // trigger input event
+        // Focus and type using execCommand (works with ProseMirror/Tiptap)
+        await page.click('[data-testid="message-textarea"]');
+        await new Promise(r => setTimeout(r, 300));
         
-        // Find send button (usually the SVG arrow or a button with specific class near textarea)
-        const sendBtn = await page.$('textarea + div button, div[role="button"]:has(svg)');
-        if (sendBtn) {
-            await sendBtn.click();
+        const inserted = await page.evaluate((text) => {
+            const el = document.querySelector('[data-testid="message-textarea"]');
+            if (!el) return false;
+            el.focus();
+            return document.execCommand('insertText', false, text);
+        }, textPrompt);
+        
+        if (!inserted) {
+            // Fallback: type character by character
+            await page.type('[data-testid="message-textarea"]', textPrompt, { delay: 20 });
+        }
+        
+        await new Promise(r => setTimeout(r, 500));
+        
+        // Verify text was entered and send button is active
+        const canSend = await page.evaluate(() => {
+            const btn = document.querySelector('[data-testid="send-button"]');
+            return btn && btn.getAttribute('aria-disabled') !== 'true';
+        });
+        
+        if (canSend) {
+            logInfo('[MiniMax] Clicking send button...');
+            await page.click('[data-testid="send-button"]');
         } else {
-            // fallback: hit enter
+            logInfo('[MiniMax] Send button disabled, pressing Enter...');
             await page.keyboard.press('Enter');
         }
+
+        // Brief wait after send
+        await new Promise(r => setTimeout(r, 2000));
 
         let fullContent = '';
         let done = false;
         const maxPolls = 120;
         let pollCount = 0;
-        let sentRole = false;
+        let responseContent = '';
+        
+        // Count initial bubbles
+        const initialBubblesCount = (await page.$$('div.markdown-body, div.matrix-markdown.message-content')).length;
 
-        // Find the last assistant message bubble
-        while (pollCount < maxPolls && !done) {
+        while (pollCount < maxPolls) {
             await new Promise(r => setTimeout(r, 1000));
             pollCount++;
 
-            // Wait for response bubble to appear
-            const bubbles = await page.$$('div.markdown-body'); // Minimax uses markdown-body usually
-            if (bubbles.length > 0) {
-                const lastBubble = bubbles[bubbles.length - 1];
-                const currentContent = await page.evaluate(el => el.innerText, lastBubble);
-                
-                if (currentContent && currentContent.length > fullContent.length) {
-                    const chunk = currentContent.substring(fullContent.length);
-                    if (!sentRole && onChunk && stream) {
-                        onChunk('', 'assistant');
-                        sentRole = true;
+            try {
+                // Wait for response bubble to appear
+                const bubbles = await page.$$('div.markdown-body, div.matrix-markdown.message-content');
+                if (bubbles.length > initialBubblesCount) {
+                    const lastBubble = bubbles[bubbles.length - 1];
+                    const currentContent = await page.evaluate(el => el.innerText, lastBubble);
+                    
+                    if (currentContent && currentContent.length > responseContent.length) {
+                        const newChunk = currentContent.substring(responseContent.length);
+                        responseContent = currentContent;
+                        fullContent = currentContent;
+                        
+                        if (stream) {
+                            onChunk({ content: newChunk, role: 'assistant' });
+                        }
                     }
-                    if (onChunk && stream && chunk) onChunk(chunk);
-                    fullContent = currentContent;
                 }
-
-                // Check if generate stopped (e.g. stop generating button disappeared)
+                
+                // Check if generation is finished
                 const isGenerating = await page.evaluate(() => {
-                    const text = document.body.innerText;
-                    return text.includes('Stop generating') || document.querySelector('svg.animate-spin');
+                    const btns = Array.from(document.querySelectorAll('button'));
+                    // Check for Stop button or any button that indicates generation is still in progress
+                    return btns.some(b => (b.innerText && b.innerText.includes('Stop')) || b.querySelector('svg circle.animate-spin') || b.getAttribute('data-testid') === 'stop-button');
                 });
                 
-                if (!isGenerating && fullContent.length > 0) {
+                if (bubbles.length > initialBubblesCount && !isGenerating && pollCount > 4 && responseContent.length > 0) {
                     done = true;
+                    break;
                 }
+            } catch (e) {
+                // ignore execution context destroyed errors during navigation
+                if (e.message.includes('Execution context was destroyed') || e.message.includes('detached Frame')) continue;
+                console.error('[MiniMax] Polling error:', e.message);
             }
         }
 
@@ -547,7 +605,12 @@ export async function sendMinimaxChatCompletion({ messages, model = DEFAULT_MINI
         throw new Error('MiniMax guest mode is not supported. Use account mode.');
     }
     
-    const transportMode = getMinimaxTransportMode();
+    let transportMode = getMinimaxTransportMode();
+    if (MINIMAX_BASE_URL.includes('agent.minimax.io')) {
+        logInfo('[MiniMax] Forcing DOM Proxy mode because native Archon API signature generation is currently unsupported.');
+        transportMode = 'dom';
+    }
+
     if (transportMode === 'dom') {
         logInfo('[MiniMax] Routing request via Browser DOM Proxy');
         return sendMinimaxChatCompletionDomProxy({ messages, model, stream, onChunk, chatId });
@@ -650,6 +713,7 @@ export async function sendMinimaxChatCompletion({ messages, model = DEFAULT_MINI
             const detailResp = await minimaxRequest('POST', '/matrix/api/v1/chat/get_chat_detail', { chat_id: finalChatId }, deviceInfo);
             if (!detailResp.ok) continue;
             const json = await detailResp.json();
+            
             const aiMessages = (json.messages || []).filter(m => m.msg_type === 2);
             const latestMsg = aiMessages.length > 0 ? aiMessages[aiMessages.length - 1] : null;
 

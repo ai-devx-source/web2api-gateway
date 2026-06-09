@@ -25,7 +25,7 @@ The service supports 8 different providers via direct API integration, browser s
 | 🟢 **Z.ai / GLM** | API + Browser | 14 models | Chat, Streaming, Vision, Deep Research |
 | 🟢 **DeepSeek** | API + Browser | 2 models | Chat, Reasoning (R1) |
 | 🟢 **Kimi (Moonshot)** | Browser | 6 models | Chat, Long Context (128k) |
-| 🟢 **MiniMax (Hailuo)** | Browser | — | Chat, Streaming |
+| 🟢 **MiniMax (Hailuo)** | Browser | 3 models | Chat, Streaming |
 | 🟢 **Perplexity AI** | Browser | 8 models | Search-augmented Chat |
 | 🟢 **Xiaomi MIMO** | API | 5 models | Chat, Streaming |
 | 🟢 **HuggingFace** | Browser | 9 models | Open-source models |
@@ -76,6 +76,14 @@ deepseek-chat       deepseek-reasoner
 ```
 kimi-k2.6           kimi-k2.5            kimi-k2
 moonshot-v1-128k    moonshot-v1-32k      moonshot-v1-8k
+```
+</details>
+
+<details>
+<summary><b>MiniMax / Hailuo (3 models)</b></summary>
+
+```
+MiniMax-M3          MiniMax-M2.7         MiniMax-Text-01
 ```
 </details>
 
